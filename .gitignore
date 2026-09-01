@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+phoenix.log
+.pending_cfg_theme
+picker-ui/DCThemePicker
+*.thumb.png.bak-*
