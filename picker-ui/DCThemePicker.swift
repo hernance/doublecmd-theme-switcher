@@ -72,7 +72,15 @@ func launchPhoenixDetached(theme: String, mode: String) {
     p.arguments = [theme, mode]
     p.standardOutput = logHandle
     p.standardError = logHandle
-    try? p.run()
+    do {
+        try p.run()
+    } catch {
+        let alert = NSAlert()
+        alert.messageText = "No se pudo aplicar el tema"
+        alert.informativeText = "No se pudo lanzar \(phoenixPath): \(error.localizedDescription)"
+        alert.alertStyle = .critical
+        alert.runModal()
+    }
 }
 
 // Pregunta el modo cuando DC esta corriendo. Devuelve "now", "stage" o nil (cancelar).

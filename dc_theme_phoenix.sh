@@ -45,6 +45,11 @@ if [ -z "$THEME" ]; then
   exit 1
 fi
 
+if [ "$MODE" != "now" ] && [ "$MODE" != "stage" ]; then
+  echo "Modo invalido: $MODE (usar now o stage)" >&2
+  exit 1
+fi
+
 if ! [[ "$THEME" =~ ^[A-Za-z0-9._-]+$ ]]; then
   echo "Nombre de tema invalido: $THEME (solo letras, numeros, '.', '_' y '-')" >&2
   exit 1
@@ -107,6 +112,9 @@ fi
 log "Tema aplicado."
 
 log "Reabriendo $DC_APP_NAME..."
-open -a "$DC_APP_NAME"
+if ! open -a "$DC_APP_NAME"; then
+  log "ERROR: no se pudo reabrir $DC_APP_NAME; el tema ya quedo aplicado, abrila a mano."
+  exit 1
+fi
 
 log "Listo."

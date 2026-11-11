@@ -37,10 +37,25 @@ def backup(path):
     return dst
 
 
+def atomic_write(path, content):
+    """Escribe en un temporal del mismo directorio y reemplaza el original con os.replace:
+    si el proceso se corta, el archivo queda con el contenido viejo o el nuevo, nunca a medias."""
+    tmp_path = f"{path}.tmp-{os.getpid()}"
+    with open(tmp_path, "w") as f:
+        f.write(content)
+        f.flush()
+        os.fsync(f.fileno())
+    os.replace(tmp_path, path)
+
+
 def find_style_block(text, name):
     """Devuelve (start, end) del objeto {"Name": name, ...} dentro de un array Styles,
     caminando el balance de llaves (el archivo no es JSON estricto: claves sin comillas)."""
     marker = f'Name : "{name}"'
+    if text.count(marker) != 1:
+        raise RuntimeError(
+            f"Style '{name}' aparece {text.count(marker)} veces (se esperaba 1); abortando sin escribir."
+        )
     idx = text.index(marker)
     open_idx = text.rindex("{", 0, idx)
     depth = 0
@@ -93,32 +108,40 @@ def apply_colors_json(config_dir, theme_json_path, style_name):
         )
 
     backup_path = backup(colors_path)
-    with open(colors_path, "w") as f:
-        f.write(new_content)
+    atomic_write(colors_path, new_content)
     return backup_path
+
+
+def warn(msg):
+    print(f"AVISO: {msg}", file=sys.stderr)
 
 
 def apply_darkmode_cfg(config_dir, theme_cfg_path):
     if not theme_cfg_path or not os.path.isfile(theme_cfg_path):
+        warn("el tema no trae .cfg; DarkMode no se aplica.")
         return None
     with open(theme_cfg_path) as f:
         cfg_text = f.read()
     m = re.search(r"DarkMode=(\d+)", cfg_text)
     if not m:
+        warn("el .cfg del tema no trae DarkMode; no se aplica.")
         return None
     new_val = m.group(1)
 
     cfg_path = os.path.join(config_dir, "doublecmd.cfg")
     if not os.path.isfile(cfg_path):
+        warn(f"no existe {cfg_path}; DarkMode no se aplicó.")
         return None
     with open(cfg_path) as f:
         current = f.read()
-    updated = re.sub(r"DarkMode=\d+", f"DarkMode={new_val}", current)
+    updated, n = re.subn(r"DarkMode=\d+", f"DarkMode={new_val}", current, count=1)
+    if n == 0:
+        warn(f"{cfg_path} no tiene la clave DarkMode; no se aplicó.")
+        return None
     if updated == current:
         return None
     backup_path = backup(cfg_path)
-    with open(cfg_path, "w") as f:
-        f.write(updated)
+    atomic_write(cfg_path, updated)
     return backup_path
 
 
@@ -142,6 +165,7 @@ def main():
     ap.add_argument("--only", choices=["all", "colors", "cfg"], default="all",
                      help="aplicar solo colors.json, solo doublecmd.cfg (DarkMode), o ambos (default)")
     args = ap.parse_args()
+    args.config_dir = os.path.expanduser(args.config_dir)
 
     if args.list or not args.apply:
         list_themes()
@@ -170,10 +194,14 @@ def main():
 
     colors_backup = None
     cfg_backup = None
-    if args.only in ("all", "colors"):
-        colors_backup = apply_colors_json(args.config_dir, theme_json_path, style_name)
-    if args.only in ("all", "cfg"):
-        cfg_backup = apply_darkmode_cfg(args.config_dir, theme_cfg_path)
+    try:
+        if args.only in ("all", "colors"):
+            colors_backup = apply_colors_json(args.config_dir, theme_json_path, style_name)
+        if args.only in ("all", "cfg"):
+            cfg_backup = apply_darkmode_cfg(args.config_dir, theme_cfg_path)
+    except (RuntimeError, OSError) as e:
+        print(f"ERROR: {e}", file=sys.stderr)
+        sys.exit(1)
 
     print(f"Tema '{args.apply}' (style: {style_name}, only={args.only}) aplicado.")
     if colors_backup:

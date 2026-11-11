@@ -45,7 +45,9 @@ while IFS= read -r line; do
 done < <(cd "$THEMES_DIR" && ls *.json 2>/dev/null | sed 's/\.json$//' | sort)
 
 if [ "${#THEMES[@]}" -eq 0 ]; then
-  osascript -e 'display alert "DC Theme Picker" message "No hay temas en '"$THEMES_DIR"'"'
+  themes_dir_as="${THEMES_DIR//\\/\\\\}"
+  themes_dir_as="${themes_dir_as//\"/\\\"}"
+  osascript -e "display alert \"DC Theme Picker\" message \"No hay temas en $themes_dir_as\""
   exit 1
 fi
 
