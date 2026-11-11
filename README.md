@@ -34,7 +34,7 @@ de la app sin perder tabs abiertos.
 ## Instalación
 
 ```bash
-git clone https://github.com/<tu-usuario>/doublecmd-theme-switcher.git ~/bin/dc-theme
+git clone https://github.com/hernance/doublecmd-theme-switcher.git ~/bin/dc-theme
 ```
 
 El picker asume esa ubicación exacta (`~/bin/dc-theme`, hardcoded en `DCThemePicker.swift`
