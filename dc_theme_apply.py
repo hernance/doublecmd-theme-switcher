@@ -208,7 +208,7 @@ def main():
         print(f"Backup colors.json: {colors_backup}")
     if cfg_backup:
         print(f"Backup doublecmd.cfg: {cfg_backup}")
-    print("Reabri Double Commander para ver los cambios.")
+    print("Los cambios se ven al abrir Double Commander (si ya estaba abierto, reiniciarlo).")
 
 
 if __name__ == "__main__":
