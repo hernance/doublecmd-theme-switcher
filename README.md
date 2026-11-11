@@ -62,6 +62,16 @@ dc_theme_phoenix.sh catppuccin-mocha now            # cierra DC, aplica, reabre
 dc_theme_phoenix.sh catppuccin-mocha stage          # aplica colores en caliente, resto al próximo inicio
 ```
 
+## Compatibilidad
+
+Probado con Double Commander 1.2.7 (build 359) en macOS. Verificado en esa versión:
+
+- `dc_theme_phoenix.sh <tema> now` con DC cerrado: aplica el tema completo.
+- `now` con DC abierto: cierra con quit gracioso, aplica y reabre; el `DarkMode` pendiente se aplica antes que el tema.
+- `stage` con DC abierto: aplica solo `colors.json` en caliente y deja `DarkMode` pendiente hasta el próximo cierre.
+
+No se probó en otras versiones de DC.
+
 ## Créditos
 
 - [Double Commander](https://github.com/doublecmd/doublecmd) — el file manager.
