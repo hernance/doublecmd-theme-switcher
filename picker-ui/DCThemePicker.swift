@@ -1,10 +1,10 @@
-// DCThemePicker — selector grafico de temas para Double Commander.
-// Compilado por dc_theme_picker.sh con swiftc a un binario local (picker-ui/DCThemePicker).
-// Muestra una grilla de tarjetas (miniatura + nombre) leyendo ~/bin/dc-theme/themes/*.json
-// y su <nombre>.thumb.png. Al elegir: si DC esta corriendo pregunta el modo (now/stage),
-// y dispara dc_theme_phoenix.sh detached (sobrevive al quit de DC).
+// DCThemePicker — graphical theme picker for Double Commander.
+// Compiled by dc_theme_picker.sh with swiftc into a local binary (picker-ui/DCThemePicker).
+// Shows a grid of cards (thumbnail + name) read from ~/bin/dc-theme/themes/*.json
+// and the matching <name>.thumb.png. On selection: if DC is running it asks for the mode
+// (now/stage), and launches dc_theme_phoenix.sh detached (survives the DC quit).
 //
-// Uso: DCThemePicker [--selftest]   (--selftest: lista los temas detectados y sale, sin UI)
+// Usage: DCThemePicker [--selftest]   (--selftest: lists the detected themes and exits, no UI)
 
 import SwiftUI
 import AppKit
@@ -26,8 +26,8 @@ struct Theme: Identifiable, Hashable {
     }
 }
 
-// Mismo allowlist que dc_theme_apply.py / dc_theme_phoenix.sh: sin esto, un nombre de
-// tema con comillas/`;`/`$()` podria inyectar comandos al pasar por Process/AppleScript.
+// Same allowlist as dc_theme_apply.py / dc_theme_phoenix.sh: without this, a theme
+// name with quotes/`;`/`$()` could inject commands when passed through Process/AppleScript.
 func isValidThemeName(_ name: String) -> Bool {
     !name.isEmpty && name.allSatisfy { $0.isASCII && ($0.isLetter || $0.isNumber || $0 == "." || $0 == "_" || $0 == "-") }
 }
@@ -58,9 +58,9 @@ func dcIsRunning() -> Bool {
 }
 
 func launchPhoenixDetached(theme: String, mode: String) {
-    // Se llama solo con nombres ya validados por isValidThemeName (ver choose()).
-    // Process.arguments no pasa por un shell, asi que no hace falta escapar nada;
-    // no se espera el proceso (sin waitUntilExit) para que sobreviva al quit de DC/picker.
+    // Only called with names already validated by isValidThemeName (see choose()).
+    // Process.arguments doesn't go through a shell, so nothing needs escaping;
+    // the process is not awaited (no waitUntilExit) so it survives the DC/picker quit.
     if !FileManager.default.fileExists(atPath: logPath) {
         FileManager.default.createFile(atPath: logPath, contents: nil)
     }
@@ -76,22 +76,22 @@ func launchPhoenixDetached(theme: String, mode: String) {
         try p.run()
     } catch {
         let alert = NSAlert()
-        alert.messageText = "No se pudo aplicar el tema"
-        alert.informativeText = "No se pudo lanzar \(phoenixPath): \(error.localizedDescription)"
+        alert.messageText = "Could not apply the theme"
+        alert.informativeText = "Could not launch \(phoenixPath): \(error.localizedDescription)"
         alert.alertStyle = .critical
         alert.runModal()
     }
 }
 
-// Pregunta el modo cuando DC esta corriendo. Devuelve "now", "stage" o nil (cancelar).
+// Asks for the mode when DC is running. Returns "now", "stage" or nil (cancel).
 func askMode(for theme: Theme) -> String? {
     let alert = NSAlert()
-    alert.messageText = "Aplicar \u{201C}\(theme.displayName)\u{201D}"
-    alert.informativeText = "Double Commander est\u{00E1} abierto. Para ver el tema completo hay que cerrarlo y volver a abrirlo (los tabs se mantienen)."
+    alert.messageText = "Apply \u{201C}\(theme.displayName)\u{201D}"
+    alert.informativeText = "Double Commander is open. To see the complete theme, it has to be closed and reopened (tabs are preserved)."
     alert.alertStyle = .informational
-    alert.addButton(withTitle: "Cerrar y aplicar ahora")
-    alert.addButton(withTitle: "Al pr\u{00F3}ximo inicio")
-    alert.addButton(withTitle: "Cancelar")
+    alert.addButton(withTitle: "Quit and apply now")
+    alert.addButton(withTitle: "On next launch")
+    alert.addButton(withTitle: "Cancel")
     switch alert.runModal() {
     case .alertFirstButtonReturn: return "now"
     case .alertSecondButtonReturn: return "stage"
@@ -153,7 +153,7 @@ struct ThemeCard: View {
         }
         .buttonStyle(.plain)
         .onHover { hovering = $0 }
-        .help("Aplicar el tema \(theme.name)")
+        .help("Apply the \(theme.name) theme")
     }
 }
 
@@ -168,12 +168,12 @@ struct ContentView: View {
     var body: some View {
         VStack(spacing: 16) {
             if themes.isEmpty {
-                Text("No hay temas en \(themesDir)")
+                Text("No themes in \(themesDir)")
                     .font(.headline)
                     .foregroundStyle(.secondary)
                     .padding(40)
             } else {
-                Text("Eleg\u{00ED} un tema")
+                Text("Choose a theme")
                     .font(.title3.weight(.semibold))
                     .frame(maxWidth: .infinity, alignment: .leading)
                 LazyVGrid(columns: columns, spacing: 16) {
@@ -183,11 +183,11 @@ struct ContentView: View {
                 }
             }
             HStack {
-                Text("Un click en la tarjeta aplica el tema")
+                Text("Click a card to apply the theme")
                     .font(.caption)
                     .foregroundStyle(.tertiary)
                 Spacer()
-                Button("Cancelar") { NSApp.terminate(nil) }
+                Button("Cancel") { NSApp.terminate(nil) }
                     .keyboardShortcut(.cancelAction)
             }
         }
@@ -234,7 +234,7 @@ struct DCThemePickerApp: App {
     }
 
     var body: some Scene {
-        WindowGroup("Tema de Double Commander") {
+        WindowGroup("Double Commander Theme") {
             ContentView()
                 .fixedSize()
         }
