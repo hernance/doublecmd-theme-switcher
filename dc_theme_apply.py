@@ -13,7 +13,7 @@ Usage:
   dc_theme_apply.py --apply vscode-2024 --with-fonts   # also overwrites <Fonts> in the xml
 
 Themes: <name>.json files (+ optional <name>.cfg with DarkMode=N) in ./themes/,
-same format as https://github.com/t0mmili/dc-themes (carpeta schemes/).
+same format as https://github.com/t0mmili/dc-themes (schemes/ folder).
 """
 
 import argparse
