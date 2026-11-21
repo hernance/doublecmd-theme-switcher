@@ -1,19 +1,19 @@
 #!/usr/bin/env python3
-"""Theme changer para Double Commander adaptado al esquema con colors.json externo
-(ConfigVersion >= ~14). El proyecto original (delington/Double-Commander-Theme-Changer)
-escribe <Foreground>/<Background>/<LogWindow>/<PathLabel> directo en doublecmd.xml,
-esquema que DC dejo de leer cuando externalizo los colores a colors.json. Este script
-reemplaza el bloque de Style correspondiente (ej. "Dark") dentro de colors.json,
-en vez de tocar el XML.
+"""Theme changer for Double Commander, adapted to the external colors.json scheme
+(ConfigVersion >= ~14). The original project (delington/Double-Commander-Theme-Changer)
+writes <Foreground>/<Background>/<LogWindow>/<PathLabel> directly into doublecmd.xml,
+a scheme DC stopped reading once it moved the colors out to colors.json. This script
+replaces the matching Style block (e.g. "Dark") inside colors.json
+instead of touching the XML.
 
-Uso:
+Usage:
   dc_theme_apply.py --list
   dc_theme_apply.py --apply vscode-2024
-  dc_theme_apply.py --apply vscode-2024 --style Dark   # si el json trae mas de un Style
-  dc_theme_apply.py --apply vscode-2024 --with-fonts   # tambien pisa <Fonts> del xml
+  dc_theme_apply.py --apply vscode-2024 --style Dark   # if the json has more than one Style
+  dc_theme_apply.py --apply vscode-2024 --with-fonts   # also overwrites <Fonts> in the xml
 
-Temas: archivos <nombre>.json (+ opcional <nombre>.cfg con DarkMode=N) en ./themes/,
-mismo formato que https://github.com/t0mmili/dc-themes (carpeta schemes/).
+Themes: <name>.json files (+ optional <name>.cfg with DarkMode=N) in ./themes/,
+same format as https://github.com/t0mmili/dc-themes (carpeta schemes/).
 """
 
 import argparse
@@ -38,8 +38,8 @@ def backup(path):
 
 
 def atomic_write(path, content):
-    """Escribe en un temporal del mismo directorio y reemplaza el original con os.replace:
-    si el proceso se corta, el archivo queda con el contenido viejo o el nuevo, nunca a medias."""
+    """Write to a temp file in the same directory and replace the original with os.replace:
+    if the process is interrupted, the file keeps either the old or the new content, never a partial write."""
     tmp_path = f"{path}.tmp-{os.getpid()}"
     with open(tmp_path, "w") as f:
         f.write(content)
@@ -49,12 +49,12 @@ def atomic_write(path, content):
 
 
 def find_style_block(text, name):
-    """Devuelve (start, end) del objeto {"Name": name, ...} dentro de un array Styles,
-    caminando el balance de llaves (el archivo no es JSON estricto: claves sin comillas)."""
+    """Return (start, end) of the {"Name": name, ...} object inside a Styles array,
+    by walking the brace balance (the file is not strict JSON: keys are unquoted)."""
     marker = f'Name : "{name}"'
     if text.count(marker) != 1:
         raise RuntimeError(
-            f"Style '{name}' aparece {text.count(marker)} veces (se esperaba 1); abortando sin escribir."
+            f"Style '{name}' appears {text.count(marker)} times (expected 1); aborting without writing."
         )
     idx = text.index(marker)
     open_idx = text.rindex("{", 0, idx)
@@ -104,7 +104,7 @@ def apply_colors_json(config_dir, theme_json_path, style_name):
         "["
     ) != new_content.count("]"):
         raise RuntimeError(
-            "colors.json quedaria desbalanceado tras el reemplazo; abortando sin escribir."
+            "colors.json would be unbalanced after the replacement; aborting without writing."
         )
 
     backup_path = backup(colors_path)
@@ -113,30 +113,30 @@ def apply_colors_json(config_dir, theme_json_path, style_name):
 
 
 def warn(msg):
-    print(f"AVISO: {msg}", file=sys.stderr)
+    print(f"WARNING: {msg}", file=sys.stderr)
 
 
 def apply_darkmode_cfg(config_dir, theme_cfg_path):
     if not theme_cfg_path or not os.path.isfile(theme_cfg_path):
-        warn("el tema no trae .cfg; DarkMode no se aplica.")
+        warn("the theme has no .cfg; DarkMode will not be applied.")
         return None
     with open(theme_cfg_path) as f:
         cfg_text = f.read()
     m = re.search(r"DarkMode=(\d+)", cfg_text)
     if not m:
-        warn("el .cfg del tema no trae DarkMode; no se aplica.")
+        warn("the theme .cfg has no DarkMode; not applying it.")
         return None
     new_val = m.group(1)
 
     cfg_path = os.path.join(config_dir, "doublecmd.cfg")
     if not os.path.isfile(cfg_path):
-        warn(f"no existe {cfg_path}; DarkMode no se aplicó.")
+        warn(f"{cfg_path} does not exist; DarkMode was not applied.")
         return None
     with open(cfg_path) as f:
         current = f.read()
     updated, n = re.subn(r"DarkMode=\d+", f"DarkMode={new_val}", current, count=1)
     if n == 0:
-        warn(f"{cfg_path} no tiene la clave DarkMode; no se aplicó.")
+        warn(f"{cfg_path} has no DarkMode key; not applied.")
         return None
     if updated == current:
         return None
@@ -146,24 +146,24 @@ def apply_darkmode_cfg(config_dir, theme_cfg_path):
 
 
 def apply_fonts_xml(config_dir, theme_json_path_dir_unused):
-    """Placeholder: --with-fonts no implementado para el formato dc-themes (los .xml de
-    ese repo traen <Fonts> pero no lo tocamos por defecto para no pisar fuentes propias)."""
+    """Placeholder: --with-fonts is not implemented for the dc-themes format (the .xml files
+    in that repo carry <Fonts>, but we leave it alone by default so as not to overwrite your own fonts)."""
     raise NotImplementedError(
-        "--with-fonts: el fragmento <Fonts> vive en el .xml del tema (no en colors.json). "
-        "No se toca por defecto para no pisar tus fuentes (JetBrains Mono/Monaco). "
-        "Si lo queres, aplicalo a mano copiando el bloque <Fonts> del .xml del tema."
+        "--with-fonts: the <Fonts> fragment lives in the theme's .xml (not in colors.json). "
+        "It is left alone by default so as not to overwrite your fonts (JetBrains Mono/Monaco). "
+        "If you want it, apply it by hand by copying the <Fonts> block from the theme's .xml."
     )
 
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--list", action="store_true", help="listar temas disponibles en ./themes")
-    ap.add_argument("--apply", metavar="TEMA", help="nombre de tema (sin .json) en ./themes")
-    ap.add_argument("--style", metavar="NOMBRE", help='Style a reemplazar (por defecto: el primero del json del tema, ej "Dark")')
-    ap.add_argument("--config-dir", default=DEFAULT_CONFIG_DIR, help=f"carpeta de config de DC (default: {DEFAULT_CONFIG_DIR})")
-    ap.add_argument("--with-fonts", action="store_true", help="tambien aplicar <Fonts> del tema (no implementado, ver --help)")
+    ap.add_argument("--list", action="store_true", help="list available themes in ./themes")
+    ap.add_argument("--apply", metavar="THEME", help="theme name (without .json) in ./themes")
+    ap.add_argument("--style", metavar="NAME", help='Style to replace (default: the first one in the theme json, e.g. "Dark")')
+    ap.add_argument("--config-dir", default=DEFAULT_CONFIG_DIR, help=f"DC config directory (default: {DEFAULT_CONFIG_DIR})")
+    ap.add_argument("--with-fonts", action="store_true", help="also apply the theme's <Fonts> (not implemented, see --help)")
     ap.add_argument("--only", choices=["all", "colors", "cfg"], default="all",
-                     help="aplicar solo colors.json, solo doublecmd.cfg (DarkMode), o ambos (default)")
+                     help="apply only colors.json, only doublecmd.cfg (DarkMode), or both (default)")
     args = ap.parse_args()
     args.config_dir = os.path.expanduser(args.config_dir)
 
@@ -173,7 +173,7 @@ def main():
 
     if not THEME_NAME_RE.match(args.apply):
         print(
-            f"Nombre de tema invalido: {args.apply!r} (solo letras, numeros, '.', '_' y '-')",
+            f"Invalid theme name: {args.apply!r} (letters, digits, '.', '_' and '-' only)",
             file=sys.stderr,
         )
         sys.exit(1)
@@ -181,12 +181,12 @@ def main():
     theme_json_path = os.path.join(THEMES_DIR, f"{args.apply}.json")
     theme_cfg_path = os.path.join(THEMES_DIR, f"{args.apply}.cfg")
     if not os.path.isfile(theme_json_path):
-        print(f"No existe {theme_json_path}", file=sys.stderr)
+        print(f"{theme_json_path} does not exist", file=sys.stderr)
         sys.exit(1)
 
     style_name = args.style or detect_style_name(theme_json_path)
     if not style_name:
-        print("No se pudo detectar el Style del tema; pasa --style", file=sys.stderr)
+        print("Could not detect the theme Style; pass --style", file=sys.stderr)
         sys.exit(1)
 
     if args.with_fonts:
@@ -203,12 +203,12 @@ def main():
         print(f"ERROR: {e}", file=sys.stderr)
         sys.exit(1)
 
-    print(f"Tema '{args.apply}' (style: {style_name}, only={args.only}) aplicado.")
+    print(f"Theme '{args.apply}' (style: {style_name}, only={args.only}) applied.")
     if colors_backup:
         print(f"Backup colors.json: {colors_backup}")
     if cfg_backup:
         print(f"Backup doublecmd.cfg: {cfg_backup}")
-    print("Los cambios se ven al abrir Double Commander (si ya estaba abierto, reiniciarlo).")
+    print("Changes show up when Double Commander is opened (if it is already open, restart it).")
 
 
 if __name__ == "__main__":
