@@ -1,85 +1,85 @@
 # Double Commander Theme Switcher (macOS)
 
-Selector gráfico de temas para [Double Commander](https://github.com/doublecmd/doublecmd) en macOS.
-Un botón de toolbar abre una grilla de tarjetas (miniatura + nombre) — un click aplica el tema
-completo (colores + modo claro/oscuro) sin tocar nada a mano en la config de DC.
+A graphical theme switcher for [Double Commander](https://github.com/doublecmd/doublecmd) on macOS.
+A toolbar button opens a grid of cards (thumbnail + name) — one click applies the complete
+theme (colors + light/dark mode) without hand-editing DC's config.
 
 ![picker](themes/vscode-2024.thumb.png)
 
-## Por qué existe
+## Why it exists
 
-Las versiones recientes de Double Commander externalizaron los colores a `colors.json`
-(`ConfigVersion` moderno). Los theme-changers viejos que escriben `<Foreground>`/`<Background>`
-directo en `doublecmd.xml` ya no hacen nada en ese esquema. Este proyecto aplica el tema al
-lugar correcto (`colors.json` + `DarkMode` en `doublecmd.cfg`) y maneja el ciclo de reinicio
-de la app sin perder tabs abiertos.
+Recent versions of Double Commander moved colors out into `colors.json`
+(modern `ConfigVersion`). Older theme changers that write `<Foreground>`/`<Background>`
+directly into `doublecmd.xml` no longer do anything under that scheme. This project applies the
+theme to the right place (`colors.json` + `DarkMode` in `doublecmd.cfg`) and handles the app's
+restart cycle without losing open tabs.
 
-## Componentes
+## Components
 
-- **`picker-ui/DCThemePicker.swift`** — UI nativa SwiftUI: grilla de temas con miniatura,
-  un click aplica. Se compila sola al primer uso (`swiftc`, sin dependencias externas).
-- **`dc_theme_picker.sh`** — botón de toolbar de DC: lanza el picker (compilándolo si hace
-  falta); si no hay toolchain Swift, cae a un fallback con `osascript` (lista + Preview).
-- **`dc_theme_phoenix.sh`** — aplica el tema. Si DC está corriendo, lo cierra con quit
-  gracioso (conserva tabs/estado), aplica, y lo reabre. Si el usuario elige "al próximo
-  inicio", aplica los colores en caliente y deja el `DarkMode` pendiente hasta el próximo
-  cierre (evita la carrera con DC reescribiendo su propio `doublecmd.cfg`).
-- **`dc_theme_apply.py`** — el motor: reemplaza el bloque `Style` correspondiente dentro de
-  `colors.json` y el `DarkMode` de `doublecmd.cfg`, con backup automático antes de escribir.
-- **`themes/`** — un tema por `<nombre>.json` (+ `.cfg` opcional con `DarkMode=0/1`) en el
-  mismo formato que [t0mmili/dc-themes](https://github.com/t0mmili/dc-themes). Trae 4 paletas
-  [Catppuccin](https://github.com/catppuccin/catppuccin) (Frappé, Latte, Macchiato, Mocha),
-  VS Code 2024 y los dos temas default de DC.
+- **`picker-ui/DCThemePicker.swift`** — native SwiftUI UI: a grid of themes with thumbnails,
+  one click applies. It compiles itself on first use (`swiftc`, no external dependencies).
+- **`dc_theme_picker.sh`** — DC toolbar button: launches the picker (compiling it if
+  needed); if there is no Swift toolchain, it falls back to an `osascript` flow (list + Preview).
+- **`dc_theme_phoenix.sh`** — applies the theme. If DC is running, it quits it gracefully
+  (preserving tabs/state), applies the theme, and reopens it. If the user picks "on next
+  launch", it applies the colors live and leaves `DarkMode` pending until the next
+  quit (avoiding a race with DC rewriting its own `doublecmd.cfg`).
+- **`dc_theme_apply.py`** — the engine: replaces the matching `Style` block inside
+  `colors.json` and the `DarkMode` setting in `doublecmd.cfg`, with an automatic backup before writing.
+- **`themes/`** — one theme per `<name>.json` (+ optional `.cfg` with `DarkMode=0/1`) in the
+  same format as [t0mmili/dc-themes](https://github.com/t0mmili/dc-themes). Includes 4
+  [Catppuccin](https://github.com/catppuccin/catppuccin) palettes (Frappé, Latte, Macchiato, Mocha),
+  VS Code 2024, and DC's two default themes.
 
-## Instalación
+## Installation
 
 ```bash
 git clone https://github.com/hernance/doublecmd-theme-switcher.git ~/bin/dc-theme
 ```
 
-El picker asume esa ubicación exacta (`~/bin/dc-theme`, hardcoded en `DCThemePicker.swift`
-y en los scripts). Si lo clonás en otro lado, ajustá `scriptDir` en el `.swift` y
-`SCRIPT_DIR` en los `.sh`.
+The picker assumes that exact location (`~/bin/dc-theme`, hardcoded in `DCThemePicker.swift`
+and in the scripts). If you clone it elsewhere, adjust `scriptDir` in the `.swift` file and
+`SCRIPT_DIR` in the `.sh` files.
 
-En Double Commander: **Configuración → Barra de herramientas → agregar botón**, comando
-`~/bin/dc-theme/dc_theme_picker.sh`, ícono `icon/theme-icon-32.png`.
+In Double Commander: **Configuration → Toolbar → add button**, command
+`~/bin/dc-theme/dc_theme_picker.sh`, icon `icon/theme-icon-32.png`.
 
-Requiere Xcode Command Line Tools (`swiftc`) para el picker gráfico; sin eso funciona igual
-con el fallback de texto.
+Requires the Xcode Command Line Tools (`swiftc`) for the graphical picker; without them it still
+works through the text fallback.
 
-## Agregar un tema propio
+## Adding your own theme
 
-Cualquier archivo `<nombre>.json` de [t0mmili/dc-themes](https://github.com/t0mmili/dc-themes)
-(carpeta `schemes/`) funciona tal cual, poniéndolo en `themes/`. Para la miniatura de la
-grilla: `sips -Z 280 captura.png --out themes/<nombre>.thumb.png`.
+Any `<name>.json` file from [t0mmili/dc-themes](https://github.com/t0mmili/dc-themes)
+(`schemes/` folder) works as is, just drop it into `themes/`. For the grid thumbnail:
+`sips -Z 280 screenshot.png --out themes/<name>.thumb.png`.
 
-## Uso por línea de comandos
+## Command-line usage
 
 ```bash
-dc_theme_apply.py --list                          # temas disponibles
-dc_theme_apply.py --apply vscode-2024              # aplica (con DC cerrado)
-dc_theme_phoenix.sh catppuccin-mocha now            # cierra DC, aplica, reabre
-dc_theme_phoenix.sh catppuccin-mocha stage          # aplica colores en caliente, resto al próximo inicio
+dc_theme_apply.py --list                          # available themes
+dc_theme_apply.py --apply vscode-2024              # apply (with DC closed)
+dc_theme_phoenix.sh catppuccin-mocha now            # quit DC, apply, reopen
+dc_theme_phoenix.sh catppuccin-mocha stage          # apply colors live, the rest on next launch
 ```
 
-## Compatibilidad
+## Compatibility
 
-Probado con Double Commander 1.2.7 (build 359) en macOS. Verificado en esa versión:
+Tested with Double Commander 1.2.7 (build 359) on macOS. Verified on that version:
 
-- `dc_theme_phoenix.sh <tema> now` con DC cerrado: aplica el tema completo.
-- `now` con DC abierto: cierra con quit gracioso, aplica y reabre; el `DarkMode` pendiente se aplica antes que el tema.
-- `stage` con DC abierto: aplica solo `colors.json` en caliente y deja `DarkMode` pendiente hasta el próximo cierre.
+- `dc_theme_phoenix.sh <theme> now` with DC closed: applies the complete theme.
+- `now` with DC open: quits gracefully, applies, and reopens; the pending `DarkMode` is applied before the theme.
+- `stage` with DC open: applies only `colors.json` live and leaves `DarkMode` pending until the next quit.
 
-No se probó en otras versiones de DC.
+Not tested on other DC versions.
 
-## Créditos
+## Credits
 
-- [Double Commander](https://github.com/doublecmd/doublecmd) — el file manager.
-- [t0mmili/dc-themes](https://github.com/t0mmili/dc-themes) (MIT) — formato y origen de los
-  archivos de tema en `themes/`.
-- [Catppuccin](https://github.com/catppuccin/catppuccin) (MIT) — paleta de los 4 temas
-  `catppuccin-*`.
+- [Double Commander](https://github.com/doublecmd/doublecmd) — the file manager.
+- [t0mmili/dc-themes](https://github.com/t0mmili/dc-themes) (MIT) — format and origin of the
+  theme files in `themes/`.
+- [Catppuccin](https://github.com/catppuccin/catppuccin) (MIT) — palette for the 4
+  `catppuccin-*` themes.
 
-## Licencia
+## License
 
-MIT — ver [LICENSE](LICENSE).
+MIT — see [LICENSE](LICENSE).
